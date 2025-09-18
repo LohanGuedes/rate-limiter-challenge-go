@@ -57,7 +57,7 @@ func TestIsAllowed_Table(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client, mock := redismock.NewClientMock()
 			limiter := New(client, 3, 60)
-			key := "rate_limit:test_user"
+			key := "rate_limit:968af933-64e3-4890-bd3c-50158bdadf0c"
 
 			if tt.redisErr != nil {
 				if tt.redisErr == redis.Nil {
@@ -76,7 +76,7 @@ func TestIsAllowed_Table(t *testing.T) {
 				mock.ExpectTxPipelineExec()
 			}
 
-			allowed, err := limiter.IsAllowed(ctx, "test_user")
+			allowed, err := limiter.IsAllowed(ctx, "968af933-64e3-4890-bd3c-50158bdadf0c")
 
 			if tt.expectErr && err == nil {
 				t.Errorf("expected error, got none")
