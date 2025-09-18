@@ -24,23 +24,30 @@ func New(client *redis.Client, count, windowSize int) *RateLimiter {
 
 func (rl *RateLimiter) IsAllowed(ctx context.Context, id string) (bool, error) {
 	key := "rate_limit:" + id
-	currentCount, err := rl.client.Get(ctx, key).Int()
-	if err != nil {
-		if errors.Is(err, strconv.ErrSyntax) {
-			// TODO: Log and deal with this correctly
-			return false, fmt.Errorf("failed to convert value to int: %w", err)
-		}
+	val, err := rl.client.Get(ctx, key).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return false, err
 	}
 
-	if currentCount < rl.limit {
-		p := rl.client.TxPipeline()
-		p.Incr(ctx, key)
-		p.ExpireNX(ctx, key, time.Duration(rl.windowSize)*time.Second)
-		_, err := p.Exec(ctx)
+	currentCount := 0
+	if err == nil {
+		currentCount, err = strconv.Atoi(val)
 		if err != nil {
-			return false, fmt.Errorf("failed to atomic increment rate-limiter counter: %w", err)
+			return false, fmt.Errorf("failed to convert value to int: %w", err)
 		}
 	}
+
+	if currentCount >= rl.limit {
+		return false, nil
+	}
+
+	p := rl.client.TxPipeline()
+	p.Incr(ctx, key)
+	p.ExpireNX(ctx, key, time.Duration(rl.windowSize)*time.Second)
+	_, err = p.Exec(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to atomic increment rate-limiter counter: %w", err)
+	}
+
 	return true, nil
 }
