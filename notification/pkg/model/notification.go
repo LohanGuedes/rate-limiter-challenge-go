@@ -12,7 +12,7 @@ import (
 // RecordType defines a record type. Together with RecordID identifies unique records across all types.
 type NotificationType string
 
-// Existing record types.
+// Existing record types. This is mappped by a json named limits.json
 const (
 	NotificationTypeNews      = NotificationType("news-notification")
 	NotificationTypeStatus    = NotificationType("status-notification")
@@ -21,6 +21,10 @@ const (
 
 // UserID defines a user id.
 type UserID uuid.UUID
+
+func (u UserID) String() string {
+	return uuid.UUID(u).String()
+}
 
 // Notification defines an individual rating created by a user for some record.
 type Notification struct {

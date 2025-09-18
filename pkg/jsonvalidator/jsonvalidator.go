@@ -1,6 +1,7 @@
 package jsonvalidator
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,4 +37,23 @@ func DecodeValidJson[T validator.Validator](r *http.Request) (T, map[string]stri
 		return data, problems, fmt.Errorf("invalid %T: %d problems", data, len(problems))
 	}
 	return data, nil, nil
+}
+
+func DecodeValidJsonFromBytes[T validator.Validator](ctx context.Context, body []byte) (T, map[string]string, error) {
+	var data T
+	if err := json.Unmarshal(body, &data); err != nil {
+		return data, nil, fmt.Errorf("unmarshal json: %w", err)
+	}
+	if problems := data.Valid(ctx); len(problems) > 0 {
+		return data, problems, fmt.Errorf("invalid %T: %d problems", data, len(problems))
+	}
+	return data, nil, nil
+}
+
+func PrefixEvaluator(e validator.Evaluator, prefix string) validator.Evaluator {
+	out := validator.Evaluator{}
+	for k, v := range e {
+		out[fmt.Sprintf("%s.%s", prefix, k)] = v
+	}
+	return out
 }
