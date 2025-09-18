@@ -12,6 +12,11 @@ import (
 // RecordType defines a record type. Together with RecordID identifies unique records across all types.
 type NotificationType string
 
+// Generates a key for a notification, usually used with a rate-limiter
+func (n NotificationType) GenKey(s string) string {
+	return string(n) + ":" + s
+}
+
 // Existing record types. This is mappped by a json named limits.json
 const (
 	NotificationTypeNews      = NotificationType("news-notification")

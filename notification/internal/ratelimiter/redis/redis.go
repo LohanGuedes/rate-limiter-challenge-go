@@ -12,19 +12,17 @@ import (
 
 // RateLimiter defines a redis-based rate-limiter
 type RateLimiter struct {
-	limit      int
-	windowSize int
-	client     *redis.Client
+	client *redis.Client
 }
 
 // New creates a redis-based rate-limiter
-func New(client *redis.Client, count, windowSize int) *RateLimiter {
-	return &RateLimiter{count, windowSize, client}
+func New(client *redis.Client) *RateLimiter {
+	return &RateLimiter{client}
 }
 
-func (rl *RateLimiter) IsAllowed(ctx context.Context, id string) (bool, error) {
-	key := "rate_limit:" + id
-	val, err := rl.client.Get(ctx, key).Result()
+func (rl *RateLimiter) IsAllowed(ctx context.Context, key string, limit, windowSize int) (bool, error) {
+	rediskey := "rate_limit:" + key
+	val, err := rl.client.Get(ctx, rediskey).Result()
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return false, err
 	}
@@ -37,13 +35,13 @@ func (rl *RateLimiter) IsAllowed(ctx context.Context, id string) (bool, error) {
 		}
 	}
 
-	if currentCount >= rl.limit {
+	if currentCount >= limit {
 		return false, nil
 	}
 
 	p := rl.client.TxPipeline()
-	p.Incr(ctx, key)
-	p.ExpireNX(ctx, key, time.Duration(rl.windowSize)*time.Second)
+	p.Incr(ctx, rediskey)
+	p.ExpireNX(ctx, rediskey, time.Duration(windowSize)*time.Second)
 	_, err = p.Exec(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to atomic increment rate-limiter counter: %w", err)

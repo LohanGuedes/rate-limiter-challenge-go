@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/model"
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 )
@@ -56,39 +57,44 @@ func TestIsAllowed_Table(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client, mock := redismock.NewClientMock()
-			limiter := New(client, 3, 60)
-			key := "rate_limit:968af933-64e3-4890-bd3c-50158bdadf0c"
+			limiter := New(client)
 
+			id := "968af933-64e3-4890-bd3c-50158bdadf0c"
+			key := model.NotificationTypeStatus.GenKey(id)
+			redisKey := "rate_limit:" + key
+
+			// Mock GET
 			if tt.redisErr != nil {
-				if tt.redisErr == redis.Nil {
-					mock.ExpectGet(key).RedisNil()
+				if errors.Is(tt.redisErr, redis.Nil) {
+					mock.ExpectGet(redisKey).RedisNil()
 				} else {
-					mock.ExpectGet(key).SetErr(tt.redisErr)
+					mock.ExpectGet(redisKey).SetErr(tt.redisErr)
 				}
 			} else {
-				mock.ExpectGet(key).SetVal(tt.redisVal)
+				mock.ExpectGet(redisKey).SetVal(tt.redisVal)
 			}
 
 			if tt.expectIncr {
 				mock.ExpectTxPipeline()
-				mock.ExpectIncr(key).SetVal(1)
-				mock.ExpectExpireNX(key, 60*time.Second).SetVal(true)
+				mock.ExpectIncr(redisKey).SetVal(1)
+				mock.ExpectExpireNX(redisKey, 60*time.Second).SetVal(true)
 				mock.ExpectTxPipelineExec()
 			}
 
-			allowed, err := limiter.IsAllowed(ctx, "968af933-64e3-4890-bd3c-50158bdadf0c")
+			allowed, err := limiter.IsAllowed(ctx, key, 3, 60)
 
+			// Assertions
 			if tt.expectErr && err == nil {
 				t.Errorf("expected error, got none")
 			}
 			if !tt.expectErr && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-
 			if allowed != tt.expectAllow {
 				t.Errorf("expected allowed = %v, got %v", tt.expectAllow, allowed)
 			}
 
+			// Ensure all expectations were met
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("unmet redis expectations: %v", err)
 			}

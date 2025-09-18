@@ -1,14 +1,14 @@
 {
   "news-notification": {
     "limit": 1,
-    "timeWindow": 86400
+    "window_size": 86400
   },
   "status-notification": {
     "limit": 2,
-    "timeWindow": 60
+    "window_size": 60
   },
   "marketing-notification": {
     "limit": 3,
-    "timeWindow": 3600
+    "window_size": 3600
   }
 }
