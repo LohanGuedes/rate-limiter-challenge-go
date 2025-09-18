@@ -63,7 +63,6 @@ func TestIsAllowed_Table(t *testing.T) {
 			key := model.NotificationTypeStatus.GenKey(id)
 			redisKey := "rate_limit:" + key
 
-			// Mock GET
 			if tt.redisErr != nil {
 				if errors.Is(tt.redisErr, redis.Nil) {
 					mock.ExpectGet(redisKey).RedisNil()
@@ -83,7 +82,6 @@ func TestIsAllowed_Table(t *testing.T) {
 
 			allowed, err := limiter.IsAllowed(ctx, key, 3, 60)
 
-			// Assertions
 			if tt.expectErr && err == nil {
 				t.Errorf("expected error, got none")
 			}
@@ -94,7 +92,6 @@ func TestIsAllowed_Table(t *testing.T) {
 				t.Errorf("expected allowed = %v, got %v", tt.expectAllow, allowed)
 			}
 
-			// Ensure all expectations were met
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("unmet redis expectations: %v", err)
 			}

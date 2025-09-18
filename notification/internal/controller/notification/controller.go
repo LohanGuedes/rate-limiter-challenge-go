@@ -40,6 +40,5 @@ func (c *Controller) Send(ctx context.Context, id model.UserID, notificationType
 	if !valid {
 		return ErrTooManyMessages
 	}
-
 	return nil
 }
