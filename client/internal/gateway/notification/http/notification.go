@@ -12,17 +12,17 @@ import (
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/model"
 )
 
-// Gateway defines a movie metadata HTTP gateway.
+// Gateway defines a notification metadata HTTP gateway.
 type Gateway struct {
 	addr string
 }
 
-// New creates a new HTTP gateway for a movie metadata service.
+// New creates a new HTTP gateway for a notification service.
 func New(addr string) *Gateway {
 	return &Gateway{addr}
 }
 
-// Send gets movie metadata by a movie id.
+// Send gets sends a notification to a given user id.
 func (g *Gateway) Send(ctx context.Context, nt model.Notification) error {
 	data, err := json.Marshal(nt)
 	if err != nil {
