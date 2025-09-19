@@ -19,7 +19,7 @@ func main() {
 
 	rateLimiter := rlredis.New(client)
 
-	configs, err := config.LoadFromJson("./configs/limits.json")
+	configs, err := config.LoadFromJsonFile("./configs/limits.json")
 	if err != nil {
 		panic(err)
 	}

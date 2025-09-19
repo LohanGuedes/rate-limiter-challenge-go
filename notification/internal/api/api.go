@@ -10,7 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Application defines the
+// Application defines the notification service Application
 type Application struct {
 	Logger      *slog.Logger
 	Router      *chi.Mux
@@ -32,10 +32,8 @@ func (api *Application) bindRoutes() http.Handler {
 	api.Router.Use(middleware.RequestID, middleware.Recoverer, middleware.Logger)
 
 	// Considering that this API can only be called within the the same
-	// Network, therefore we are *NOT dealing with authentication on this api.
+	// Network, therefore we are *NOT* dealing with authentication on this api.
 	// focusing on the rate-limiting when messaging.
-	api.Router.Get("/healthcheck", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("Healthy")) }))
-
 	api.Router.Route("/notify", func(r chi.Router) {
 		r.Post("/send", http.HandlerFunc(api.handleSendNotification))
 	})

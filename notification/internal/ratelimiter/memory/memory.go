@@ -1,3 +1,0 @@
-package memory
-
-func init() {}

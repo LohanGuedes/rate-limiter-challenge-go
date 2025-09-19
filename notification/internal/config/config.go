@@ -14,10 +14,13 @@ type RLConfig struct {
 	WindowSize int `json:"window_size"`
 }
 
+// Provider defines a rate-limiter config provider
 type Provider interface {
 	GetConfig(model.NotificationType) (RLConfig, bool)
 }
 
+// Valid check each field from a given config returning a validator.Evaluator.
+// See: jsonvalidator.Validator where it must and usually is used.
 func (c RLConfig) Valid(_ context.Context) validator.Evaluator {
 	var eval validator.Evaluator
 
