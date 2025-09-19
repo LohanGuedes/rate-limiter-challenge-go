@@ -45,14 +45,25 @@ audit:
 # DEVELOPMENT
 # ==================================================================================== #
 
-## test: run all tests
+# test: run all tests
 .PHONY: test
 test:
 	go test -v -race -buildvcs ./...
 
+
 ## test/cover: run all tests and display coverage
 .PHONY: test/cover
 test/cover:
+	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
+	go tool cover -html=/tmp/coverage.out
+
+## integration-test: run all tests
+.PHONY: integration-test
+integration-test:
+	go test -tags=integration -v -race -buildvcs ./...
+
+.PHONY: integration-test/cover
+integration-test/cover:
 	go test -v -race -buildvcs -coverprofile=/tmp/coverage.out ./...
 	go tool cover -html=/tmp/coverage.out
 
