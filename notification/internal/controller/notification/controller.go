@@ -49,7 +49,6 @@ func (c *Controller) Send(ctx context.Context, id uuid.UUID, notificationType mo
 	if !valid {
 		return ErrTooManyMessages
 	}
-
 	slog.Info("Message Sent!", "user-id", id, "notification-type", notificationType, "message", message)
 	return nil
 }
