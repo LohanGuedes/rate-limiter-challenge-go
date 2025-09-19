@@ -43,7 +43,7 @@ func (g *Gateway) Send(ctx context.Context, nt model.Notification) error {
 	if err != nil {
 		return err
 	}
-	slog.Debug("Body data", bodyData)
+	slog.Debug("Body data", "body", bodyData)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return gateway.ErrNotFound
@@ -51,5 +51,6 @@ func (g *Gateway) Send(ctx context.Context, nt model.Notification) error {
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return gateway.ErrTooManyMessages
 	}
+	slog.Info("Sent notification with success", "message", nt.Message)
 	return nil
 }
