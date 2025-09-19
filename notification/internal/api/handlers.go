@@ -29,6 +29,10 @@ func (api *Application) handleSendNotification(w http.ResponseWriter, r *http.Re
 				map[string]any{"message": "this notification type handler was not found"})
 			return
 		}
+		api.Logger.Error("unknown error", "err", err, "body", data)
+		jsonvalidator.EncodeJson(w, r, http.StatusInternalServerError,
+			map[string]any{"message": "failed to send message with unknown error, try again later"})
+		return
 	}
 
 	jsonvalidator.EncodeJson(w, r, http.StatusCreated,
