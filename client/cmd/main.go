@@ -2,33 +2,38 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log/slog"
+	"time"
 
+	httpnotification "github.com/LohanGuedes/modak-rate-limit-challenge/client/internal/gateway/notification/http"
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/model"
 	"github.com/google/uuid"
 )
 
-// When sending, send the type and use a custom json decoder for that type on
-// the notification API in order to define the correct type and spawn the
-// appropiated worker
-func send(ctx context.Context, nt model.NotificationType, userID uuid.UUID, message string) error {
-	switch nt {
-	case model.NotificationTypeNews:
-		// TODO: Call gateway
-		return errors.New("news error")
-	case model.NotificationTypeStatus:
-		// TODO: Call gateway
-		return errors.New("status errro")
-	// TODO: Call gateway
-	case model.NotificationTypeMarketing:
-		return errors.New("marketing error")
-	}
-	return nil
-}
-
 func main() {
 	id := uuid.New()
+	gateway := httpnotification.New("http://localhost:8080")
+
 	slog.Info("Start sending notifications", "USERID", id)
-	send(context.Background(), model.NotificationTypeNews, id, "Modak just got a new challenger!!!")
+
+	err := gateway.Send(context.Background(), model.Notification{NotificationType: model.NotificationTypeStatus, UserID: id, Message: "Modak just got a new challenger!!!"})
+	if err != nil {
+		slog.Error("Failed to send", "error", err)
+	}
+	err = gateway.Send(context.Background(), model.Notification{NotificationType: model.NotificationTypeStatus, UserID: id, Message: "Modak just got a new challenger!!!"})
+	if err != nil {
+		slog.Error("Failed to send", "error", err)
+	}
+
+	// Expect to be hold
+	err = gateway.Send(context.Background(), model.Notification{NotificationType: model.NotificationTypeStatus, UserID: id, Message: "OOOoooooooooh no!"})
+	if err != nil {
+		slog.Error("Failed to send", "error", err)
+	}
+	time.Sleep(10 * time.Second)
+	// Should be sent with sucess
+	err = gateway.Send(context.Background(), model.Notification{NotificationType: model.NotificationTypeStatus, UserID: id, Message: "We're in!!!"})
+	if err != nil {
+		slog.Error("Failed to send", "error", err)
+	}
 }

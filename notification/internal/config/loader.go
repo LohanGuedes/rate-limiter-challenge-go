@@ -29,7 +29,7 @@ func (m rlConfigMap) Valid(ctx context.Context) validator.Evaluator {
 	return eval
 }
 
-func NewRLConfigLoader(limits rlConfigMap) *RLConfigProvider {
+func NewRLConfigProvider(limits rlConfigMap) *RLConfigProvider {
 	return &RLConfigProvider{limits}
 }
 

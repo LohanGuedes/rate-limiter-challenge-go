@@ -24,17 +24,10 @@ const (
 	NotificationTypeMarketing = NotificationType("marketing-notification")
 )
 
-// UserID defines a user id.
-type UserID uuid.UUID
-
-func (u UserID) String() string {
-	return uuid.UUID(u).String()
-}
-
 // Notification defines an individual rating created by a user for some record.
 type Notification struct {
 	NotificationType NotificationType `json:"notificationType"`
-	UserID           UserID           `json:"userId"`
+	UserID           uuid.UUID        `json:"userId"`
 	Message          string           `json:"message"`
 }
 
