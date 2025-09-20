@@ -15,7 +15,7 @@ go run ./client/cmd
 ```bash
 cd ./notification/
 make test/cover # runs all unit-tests and opens a coverage view on your default browser
-make integration-test/cover # runs all unit-tests and opens a coverage view on your default browser
+make integration-test/cover # runs all integration-tests and opens a coverage view on your default browser
 ```
 
 ## The Challenge
