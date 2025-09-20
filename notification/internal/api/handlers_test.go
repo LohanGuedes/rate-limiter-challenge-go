@@ -8,12 +8,15 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/internal/config"
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/internal/controller/notification"
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/model"
+	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/ratelimit"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -156,53 +159,6 @@ func TestHandleSendNotification_ValidationFailure(t *testing.T) {
 	// Should have validation error fields
 	if len(response) == 0 {
 		t.Error("Expected validation errors in response")
-	}
-}
-
-func TestHandleSendNotification_RateLimitExceeded(t *testing.T) {
-	logger := slog.Default()
-	redisClient := &redis.Client{}
-
-	mockRL := &mockRateLimiter{
-		isAllowedFunc: func(ctx context.Context, key string, limit, windowSize int) (bool, error) {
-			return false, nil // Rate limit exceeded
-		},
-	}
-
-	configProvider := newMockConfigProvider()
-	ctrl := notification.NewController(mockRL, configProvider)
-	app := New(logger, redisClient, ctrl)
-
-	validID := uuid.New()
-	notification := model.Notification{
-		UserID:           validID,
-		NotificationType: model.NotificationTypeNews,
-		Message:          "This is a valid test message that is long enough",
-	}
-
-	jsonPayload, err := json.Marshal(notification)
-	if err != nil {
-		t.Fatalf("Failed to marshal notification: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/notify/send", bytes.NewBuffer(jsonPayload))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	app.handleSendNotification(w, req)
-
-	if w.Code != http.StatusTooManyRequests {
-		t.Errorf("Expected status code %d, got %d. Body: %s", http.StatusTooManyRequests, w.Code, w.Body.String())
-	}
-
-	var response map[string]any
-	err = json.NewDecoder(w.Body).Decode(&response)
-	if err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
-	}
-
-	if response["message"] != "too many messages of that type sent" {
-		t.Errorf("Expected rate limit message, got '%v'", response["message"])
 	}
 }
 
@@ -408,6 +364,119 @@ func TestHandleSendNotification_MissingFields(t *testing.T) {
 
 			if w.Code != http.StatusBadRequest {
 				t.Errorf("Expected status code %d for %s, got %d. Body: %s", http.StatusBadRequest, tc.name, w.Code, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestHandleSendNotification_RateLimitExceededWithRetryAfter(t *testing.T) {
+	logger := slog.Default()
+	redisClient := &redis.Client{}
+
+	retryAfterDuration := 45 * time.Second
+	mockRL := &mockRateLimiter{
+		isAllowedFunc: func(ctx context.Context, key string, limit, windowSize int) (bool, error) {
+			return false, ratelimit.NewLimitExceededError(retryAfterDuration, "rate limit exceeded")
+		},
+	}
+
+	configProvider := newMockConfigProvider()
+	ctrl := notification.NewController(mockRL, configProvider)
+	app := New(logger, redisClient, ctrl)
+
+	validID := uuid.New()
+	notification := model.Notification{
+		UserID:           validID,
+		NotificationType: model.NotificationTypeNews,
+		Message:          "This is a valid test message that is long enough",
+	}
+
+	jsonPayload, err := json.Marshal(notification)
+	if err != nil {
+		t.Fatalf("Failed to marshal notification: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/notify/send", bytes.NewBuffer(jsonPayload))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	app.handleSendNotification(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("Expected status code %d, got %d. Body: %s", http.StatusTooManyRequests, w.Code, w.Body.String())
+	}
+
+	// Check Retry-After header
+	retryAfter := w.Header().Get("Retry-After")
+	expectedRetryAfter := strconv.Itoa(int(retryAfterDuration.Seconds()))
+	if retryAfter != expectedRetryAfter {
+		t.Errorf("Expected Retry-After header '%s', got '%s'", expectedRetryAfter, retryAfter)
+	}
+
+	var response map[string]any
+	err = json.NewDecoder(w.Body).Decode(&response)
+	if err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if response["message"] != "too many messages of that type sent" {
+		t.Errorf("Expected rate limit message, got '%v'", response["message"])
+	}
+}
+
+func TestHandleSendNotification_RateLimitVariousRetryAfterValues(t *testing.T) {
+	testCases := []struct {
+		name           string
+		retryAfter     time.Duration
+		expectedHeader string
+	}{
+		{"30_seconds", 30 * time.Second, "30"},
+		{"1_minute", 60 * time.Second, "60"},
+		{"5_minutes", 5 * time.Minute, "300"},
+		{"1_hour", time.Hour, "3600"},
+		{"fractional_seconds", 45500 * time.Millisecond, "46"}, // Rounds up
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := slog.Default()
+			redisClient := &redis.Client{}
+
+			mockRL := &mockRateLimiter{
+				isAllowedFunc: func(ctx context.Context, key string, limit, windowSize int) (bool, error) {
+					return false, ratelimit.NewLimitExceededError(tc.retryAfter, "rate limit exceeded")
+				},
+			}
+
+			configProvider := newMockConfigProvider()
+			ctrl := notification.NewController(mockRL, configProvider)
+			app := New(logger, redisClient, ctrl)
+
+			validID := uuid.New()
+			notification := model.Notification{
+				UserID:           validID,
+				NotificationType: model.NotificationTypeStatus,
+				Message:          "Test retry after values",
+			}
+
+			jsonPayload, err := json.Marshal(notification)
+			if err != nil {
+				t.Fatalf("Failed to marshal notification: %v", err)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/notify/send", bytes.NewBuffer(jsonPayload))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			app.handleSendNotification(w, req)
+
+			if w.Code != http.StatusTooManyRequests {
+				t.Errorf("Expected status code %d, got %d", http.StatusTooManyRequests, w.Code)
+			}
+
+			retryAfter := w.Header().Get("Retry-After")
+			if retryAfter != tc.expectedHeader {
+				t.Errorf("Expected Retry-After header '%s', got '%s'", tc.expectedHeader, retryAfter)
 			}
 		})
 	}

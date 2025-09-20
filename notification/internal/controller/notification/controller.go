@@ -7,6 +7,7 @@ import (
 
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/internal/config"
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/model"
+	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/ratelimit"
 	"github.com/google/uuid"
 )
 
@@ -44,9 +45,15 @@ func (c *Controller) Send(ctx context.Context, id uuid.UUID, notificationType mo
 		cfg.WindowSize,
 	)
 	if err != nil {
+		var exceededError *ratelimit.LimitExceededError
+		if errors.As(err, &exceededError) {
+			return exceededError
+		}
 		return err
 	}
 	if !valid {
+		// This shouldn't happen in our current implementation since redis.go
+		// always returns an error when !valid, but it's good defensive programming
 		return ErrTooManyMessages
 	}
 	slog.Info("Message Sent!", "user-id", id, "notification-type", notificationType, "message", message)

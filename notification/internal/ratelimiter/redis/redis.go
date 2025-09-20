@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/ratelimit"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -36,7 +37,17 @@ func (rl *RateLimiter) IsAllowed(ctx context.Context, key string, limit, windowS
 	}
 
 	if currentCount >= limit {
-		return false, nil
+		// Get TTL to calculate retry-after
+		ttl, err := rl.client.TTL(ctx, rediskey).Result()
+		if err != nil {
+			// Fallback to window size if TTL fails
+			ttl = time.Duration(windowSize) * time.Second
+		}
+
+		return false, ratelimit.NewLimitExceededError(
+			ttl,
+			"rate limit exceeded",
+		)
 	}
 
 	p := rl.client.TxPipeline()

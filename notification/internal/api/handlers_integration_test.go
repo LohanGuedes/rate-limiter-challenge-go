@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -87,7 +84,7 @@ func TestIntegrationNewsNotificationRateLimit(t *testing.T) {
 
 	logger := slog.Default()
 	rateLimiter := redis.New(redisClient)
-	configProvider := &realConfigProvider{}
+	configProvider := &realConfigProviderMock{}
 	ctrl := notification.NewController(rateLimiter, configProvider)
 	app := New(logger, redisClient, ctrl)
 
@@ -132,7 +129,7 @@ func TestIntegrationStatusNotificationRateLimit(t *testing.T) {
 
 	logger := slog.Default()
 	rateLimiter := redis.New(redisClient)
-	configProvider := &realConfigProvider{}
+	configProvider := &realConfigProviderMock{}
 	ctrl := notification.NewController(rateLimiter, configProvider)
 	app := New(logger, redisClient, ctrl)
 
@@ -173,7 +170,7 @@ func TestIntegrationMarketingNotificationRateLimit(t *testing.T) {
 
 	logger := slog.Default()
 	rateLimiter := redis.New(redisClient)
-	configProvider := &realConfigProvider{}
+	configProvider := &realConfigProviderMock{}
 	ctrl := notification.NewController(rateLimiter, configProvider)
 	app := New(logger, redisClient, ctrl)
 
@@ -214,7 +211,7 @@ func TestIntegrationMultipleUsersIsolatedRateLimits(t *testing.T) {
 
 	logger := slog.Default()
 	rateLimiter := redis.New(redisClient)
-	configProvider := &realConfigProvider{}
+	configProvider := &realConfigProviderMock{}
 	ctrl := notification.NewController(rateLimiter, configProvider)
 	app := New(logger, redisClient, ctrl)
 
@@ -259,7 +256,7 @@ func TestIntegrationMixedNotificationTypesIndependentLimits(t *testing.T) {
 
 	logger := slog.Default()
 	rateLimiter := redis.New(redisClient)
-	configProvider := &realConfigProvider{}
+	configProvider := &realConfigProviderMock{}
 	ctrl := notification.NewController(rateLimiter, configProvider)
 	app := New(logger, redisClient, ctrl)
 

@@ -2,10 +2,12 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/internal/controller/notification"
 	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/model"
+	"github.com/LohanGuedes/modak-rate-limit-challenge/notification/pkg/ratelimit"
 	"github.com/LohanGuedes/modak-rate-limit-challenge/pkg/jsonvalidator"
 )
 
@@ -18,7 +20,9 @@ func (api *Application) handleSendNotification(w http.ResponseWriter, r *http.Re
 
 	err = api.ctrl.Send(r.Context(), data.UserID, data.NotificationType, data.Message)
 	if err != nil {
-		if errors.Is(err, notification.ErrTooManyMessages) {
+		var rateLimitErr *ratelimit.LimitExceededError
+		if errors.As(err, &rateLimitErr) {
+			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", rateLimitErr.RetryAfter.Seconds()))
 			jsonvalidator.EncodeJson(w, r, http.StatusTooManyRequests,
 				map[string]any{"message": "too many messages of that type sent"})
 			return
