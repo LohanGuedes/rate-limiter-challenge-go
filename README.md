@@ -3,9 +3,6 @@
 ```bash
 # start docker-compose
 docker compose up -d
-# start the notifications service
-cd ./notification/
-make run
 ```
 
 -- On another terminal
