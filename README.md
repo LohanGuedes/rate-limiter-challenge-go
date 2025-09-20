@@ -5,8 +5,6 @@
 docker compose up -d
 ```
 
--- On another terminal
-
 ```bash
 # Run the mock-client for testing
 go run ./client/cmd
