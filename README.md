@@ -1,4 +1,31 @@
-# Backend Rate-Limited Notification Service
+# How to run?
+
+```bash
+# start docker-compose
+docker compose up -d
+# start the notifications service
+cd ./notification/
+make run
+```
+
+-- On another terminal
+
+```bash
+# Run the mock-client for testing
+go run ./client/cmd
+```
+
+## How to test?
+
+```bash
+cd ./notification/
+make test/cover # runs all unit-tests and opens a coverage view on your default browser
+make integration-test/cover # runs all unit-tests and opens a coverage view on your default browser
+```
+
+## The Challenge
+
+### Backend Rate-Limited Notification Service
 
 We have a Notification system that sends out email notifications of various types
 (status update, daily news, project invitations, etc). We need to protect
