@@ -48,27 +48,6 @@ Some sample **notification types** and [rate limit rules], e.g.:
 > With this in mind, I suppose that they want us to be able to add easily,
 > either in Code and/or configuration-files possible rules and types
 
-NOTES:
-Your solution will be evaluated on code quality, clarity and development best practices.
-
-Take into account that this is the initial assessment of the work quality that
-you can produce in a productive environment so show your best face.
-
-Feel free to use the programming language, frameworks, technologies, etc that
-you feel more comfortable with.
-
-Below you'll find a code snippet that can serve as a guidance of one of the
-implementation alternatives in Java. Feel free to use it if you find it useful
-or ignore it otherwise; it is not required to use it at all nor translate this
-code to your programming language.
-
-Please share with us the link of the repository containing the application source
-code when finished and let us know to schedule the meeting to review the app.
-
-Feel free to ping me any question you might have about this technical assessment.
-
-Code snippet sample
-
 ```java
 import java.io.*;
 
