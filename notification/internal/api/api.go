@@ -43,7 +43,7 @@ func (api *Application) bindRoutes() http.Handler {
 
 // Start starts the Application on port 8080 and returns an error, if occurs
 func (api *Application) Start() error {
-	if err := http.ListenAndServe("localhost:8080", api.bindRoutes()); err != nil {
+	if err := http.ListenAndServe(":8080", api.bindRoutes()); err != nil {
 		return err
 	}
 	return nil

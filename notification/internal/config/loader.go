@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	_ "embed"
 	"log/slog"
 	"os"
 
@@ -9,6 +10,9 @@ import (
 	"github.com/LohanGuedes/modak-rate-limit-challenge/pkg/jsonvalidator"
 	"github.com/LohanGuedes/modak-rate-limit-challenge/pkg/validator"
 )
+
+//go:embed limits.json
+var embeddedLimitsJSON []byte
 
 // RLConfigProvider defines a configuration provider
 type RLConfigProvider struct {
@@ -18,6 +22,17 @@ type RLConfigProvider struct {
 type rlConfigMap map[model.NotificationType]RLConfig
 
 // Valid checks for each valid RLConfig within the rlConfigMap
+// LoadFromEmbedded reads configs from the embedded limits.json file and returns a
+// map[model.NotificationType]RLConfig that must be used with a provider.
+func LoadFromEmbedded() (map[model.NotificationType]RLConfig, error) {
+	configMap, problems, err := jsonvalidator.DecodeValidJsonFromBytes[rlConfigMap](context.Background(), embeddedLimitsJSON)
+	if err != nil {
+		slog.Error("failed to unmarshall configurations from embedded file", "problems", problems, "original-error", err)
+		return nil, err
+	}
+	return configMap, nil
+}
+
 func (m rlConfigMap) Valid(ctx context.Context) validator.Evaluator {
 	var eval validator.Evaluator
 
